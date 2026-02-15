@@ -4,6 +4,16 @@ parameters:
     default: ''
 
 steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.x'
+    displayName: Use Python 3.x
+
+  - script: |
+      pip install checkov
+    displayName: Install Checkov
+    continueOnError: false
+
   - script: |
       checkov --directory $(pwd) --download-external-modules true --output junitxml 2>&1 | tee $(pwd)/CheckovReport.xml 
     continueOnError: true
