@@ -17,11 +17,11 @@ steps:
     continueOnError: false
 
   - script: |
-      terrascan scan -d $(pwd) -o json > $(pwd)/TerrascanReport.json 2>&1
+      terrascan scan -d . -o json > TerrascanReport.json 2>&1
       SCAN_EXIT_CODE=$?
       echo "Terrascan exit code: $SCAN_EXIT_CODE"
       if [ $SCAN_EXIT_CODE -ne 0 ] && [ $SCAN_EXIT_CODE -ne 3 ]; then
-        cat $(pwd)/TerrascanReport.json
+        cat TerrascanReport.json
         exit $SCAN_EXIT_CODE
       fi
     continueOnError: true
@@ -33,7 +33,7 @@ steps:
       import json
       import xml.etree.ElementTree as ET
       
-      with open('$(pwd)/TerrascanReport.json', 'r') as f:
+      with open('TerrascanReport.json', 'r') as f:
           data = json.load(f)
       
       # Convert JSON to JUnit XML format
@@ -47,7 +47,7 @@ steps:
               failure.text = f"File: {violation.get('file_path', '')}\nLine: {violation.get('line', '')}"
       
       tree = ET.ElementTree(testsuites)
-      tree.write('$(pwd)/TerrascanReport.xml')
+      tree.write('TerrascanReport.xml')
       print("Converted to JUnit XML format")
       EOF
     displayName: Convert Terrascan Report to JUnit XML
