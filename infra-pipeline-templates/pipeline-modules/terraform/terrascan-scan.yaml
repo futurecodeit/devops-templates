@@ -33,22 +33,47 @@ steps:
       import json
       import xml.etree.ElementTree as ET
       
-      with open('TerrascanReport.json', 'r') as f:
-          data = json.load(f)
+      try:
+          with open('TerrascanReport.json', 'r') as f:
+              data = json.load(f)
+          
+          print(f"JSON structure: {type(data)}")
+          print(f"Data keys: {data.keys() if isinstance(data, dict) else 'Not a dict'}")
+          
+          # Convert JSON to JUnit XML format
+          testsuites = ET.Element('testsuites')
+          testsuite = ET.SubElement(testsuites, 'testsuite', name='Terrascan', tests='0')
+          
+          # Handle different terrascan output formats
+          violations = []
+          if isinstance(data, dict):
+              violations = data.get('results', data.get('violations', []))
+          
+          testsuite.set('tests', str(len(violations)))
+          
+          for violation in violations:
+              if isinstance(violation, dict):
+                  rule_id = violation.get('rule_id', violation.get('check_id', 'unknown'))
+                  severity = violation.get('severity', 'MEDIUM')
+                  description = violation.get('description', violation.get('message', ''))
+                  file_path = violation.get('file_path', violation.get('file', ''))
+                  line = violation.get('line', violation.get('line_number', 0))
+                  
+                  testcase = ET.SubElement(testsuite, 'testcase', name=rule_id, classname='Terrascan')
+                  
+                  if severity in ['HIGH', 'CRITICAL']:
+                      failure = ET.SubElement(testcase, 'failure', message=description)
+                      failure.text = f"File: {file_path}\nLine: {line}"
+          
+          tree = ET.ElementTree(testsuites)
+          tree.write('TerrascanReport.xml')
+          print("Converted to JUnit XML format successfully")
       
-      # Convert JSON to JUnit XML format
-      testsuites = ET.Element('testsuites')
-      testsuite = ET.SubElement(testsuites, 'testsuite', name='Terrascan', tests=str(len(data.get('results', []))))
-      
-      for violation in data.get('results', []):
-          testcase = ET.SubElement(testsuite, 'testcase', name=violation.get('rule_id', 'unknown'))
-          if violation.get('severity') == 'HIGH' or violation.get('severity') == 'CRITICAL':
-              failure = ET.SubElement(testcase, 'failure', message=violation.get('description', ''))
-              failure.text = f"File: {violation.get('file_path', '')}\nLine: {violation.get('line', '')}"
-      
-      tree = ET.ElementTree(testsuites)
-      tree.write('TerrascanReport.xml')
-      print("Converted to JUnit XML format")
+      except Exception as e:
+          print(f"Error converting report: {str(e)}")
+          import traceback
+          traceback.print_exc()
+          exit(1)
       EOF
     displayName: Convert Terrascan Report to JUnit XML
     continueOnError: true
