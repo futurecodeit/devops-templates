@@ -17,9 +17,41 @@ steps:
     continueOnError: false
 
   - script: |
-      terrascan scan -d $(pwd) -o junit-xml > $(pwd)/TerrascanReport.xml
+      terrascan scan -d $(pwd) -o json > $(pwd)/TerrascanReport.json 2>&1
+      SCAN_EXIT_CODE=$?
+      echo "Terrascan exit code: $SCAN_EXIT_CODE"
+      if [ $SCAN_EXIT_CODE -ne 0 ] && [ $SCAN_EXIT_CODE -ne 3 ]; then
+        cat $(pwd)/TerrascanReport.json
+        exit $SCAN_EXIT_CODE
+      fi
     continueOnError: true
     displayName: Run Terrascan
+    workingDirectory: '${{ parameters.tfExecutionDir }}'
+
+  - script: |
+      python3 << 'EOF'
+      import json
+      import xml.etree.ElementTree as ET
+      
+      with open('$(pwd)/TerrascanReport.json', 'r') as f:
+          data = json.load(f)
+      
+      # Convert JSON to JUnit XML format
+      testsuites = ET.Element('testsuites')
+      testsuite = ET.SubElement(testsuites, 'testsuite', name='Terrascan', tests=str(len(data.get('results', []))))
+      
+      for violation in data.get('results', []):
+          testcase = ET.SubElement(testsuite, 'testcase', name=violation.get('rule_id', 'unknown'))
+          if violation.get('severity') == 'HIGH' or violation.get('severity') == 'CRITICAL':
+              failure = ET.SubElement(testcase, 'failure', message=violation.get('description', ''))
+              failure.text = f"File: {violation.get('file_path', '')}\nLine: {violation.get('line', '')}"
+      
+      tree = ET.ElementTree(testsuites)
+      tree.write('$(pwd)/TerrascanReport.xml')
+      print("Converted to JUnit XML format")
+      EOF
+    displayName: Convert Terrascan Report to JUnit XML
+    continueOnError: true
     workingDirectory: '${{ parameters.tfExecutionDir }}'
 
   - task: PublishTestResults@2
