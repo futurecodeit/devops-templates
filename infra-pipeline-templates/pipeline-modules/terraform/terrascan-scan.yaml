@@ -1,0 +1,28 @@
+parameters:
+  - name: tfExecutionDir
+    type: string
+    default: ''
+
+steps:
+  - script: |
+      curl -L https://raw.githubusercontent.com/tenable/terrascan/master/install.sh | bash
+    displayName: Install Terrascan
+    continueOnError: false
+
+  - script: |
+      terrascan scan -d $(pwd) -o junit-xml > $(pwd)/TerrascanReport.xml
+    continueOnError: true
+    displayName: Run Terrascan
+    workingDirectory: '${{ parameters.tfExecutionDir }}'
+
+  - task: PublishTestResults@2
+    displayName: Publish Terrascan Results
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: '**/*TerrascanReport.xml'
+      searchFolder: '${{ parameters.tfExecutionDir }}'
+      mergeTestResults: true
+      failTaskOnFailedTests: true
+      testRunTitle: Terrascan Scan Results
+      publishRunAttachments: true

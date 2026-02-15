@@ -72,6 +72,11 @@ stages:
     
           - template: ../pipeline-modules/terraform/checkov-scan.yaml
 
+      - job: Terrascan
+        steps:
+    
+          - template: ../pipeline-modules/terraform/terrascan-scan.yaml
+
 
   # - stage: Test
   #   variables:
