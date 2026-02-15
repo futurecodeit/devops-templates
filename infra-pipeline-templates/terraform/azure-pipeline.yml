@@ -62,6 +62,9 @@ stages:
   #               excludeFoldersForTrufflehogScan: ${{ parameters.excludeFoldersForTrufflehogScan }}
   #         - template: ../../pipeline-modules/terraform/v1/cleanup.yaml
 
+
+# Static code analysis can be done directly on the Terraform configuration code, without executing it. 
+#This analysis can be useful to detect issues such as security problems and compliance inconsistency.
   - stage: Scan
     # variables:
     #   - template: ../_configs/variables/common/non-prd.yml
@@ -69,12 +72,10 @@ stages:
     jobs:
       - job: Checkov
         steps:
-    
           - template: ../pipeline-modules/terraform/checkov-scan.yaml
 
       - job: Terrascan
         steps:
-    
           - template: ../pipeline-modules/terraform/terrascan-scan.yaml
 
 
