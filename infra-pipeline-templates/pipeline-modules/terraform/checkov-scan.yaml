@@ -1,0 +1,23 @@
+parameters:
+  - name: tfExecutionDir
+    type: string
+    default: ''
+
+steps:
+  - script: |
+      checkov --directory $(pwd) --download-external-modules true --output junitxml 2>&1 | tee $(pwd)/CheckovReport.xml 
+    continueOnError: true
+    displayName: Run Checkov
+    workingDirectory: '${{ parameters.tfExecutionDir }}'
+
+  - task: PublishTestResults@2
+    displayName: Publish Checkov Results
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: 'JUnit' # Options: JUnit, NUnit, VSTest, xUnit, cTest
+      testResultsFiles: '**/*CheckovReport.xml'
+      searchFolder: '${{ parameters.tfExecutionDir }}' # Optional
+      mergeTestResults: true # Optional
+      failTaskOnFailedTests: true # Optional
+      testRunTitle: Checkov Scan Results # Optional
+      publishRunAttachments: true # Optional

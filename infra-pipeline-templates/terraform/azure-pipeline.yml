@@ -1,0 +1,88 @@
+parameters:
+  - name: skipTrufflehogScan
+    type: boolean
+    default: false
+  - name: includeFoldersForTrufflehogScan
+    type: string
+    default: ''
+  - name: excludeFoldersForTrufflehogScan
+    type: string
+    default: ''
+  - name: envConfigurationFile
+    type: string
+    default: ''
+  - name: enableDeployStage
+    type: string
+    default: ''
+  - name: skipPreCommitFailures
+    type: boolean
+    default: false
+
+stages:
+  # - stage: SnykScanIAC
+  #   variables:
+  #     - template: ../_configs/variables/common/non-prd.yml
+  #     - group: COMMON
+  #   pool: ${{ variables.agentPool }}
+  #   jobs:
+  #     - job: SnykScan
+  #       steps:
+  #         - template: ../../pipeline-modules/terraform/v1/snyk-scan.yml
+  #         - template: ../../pipeline-modules/terraform/v1/cleanup.yaml
+
+  # - stage: Validate
+  #   variables:
+  #     - template: ../_configs/variables/common/non-prd.yml
+  #   pool: ${{ variables.agentPool }}
+  #   jobs:
+  #     - job: PreCommit
+  #       steps:
+  #         - checkout: self
+  #           path: ${{ variables.serviceCodeDir }}
+  #         - checkout: templates
+  #           path: ${{ variables.archetypesDir }}
+  #         - template: ../../pipeline-modules/terraform/v1/print-env-variables.yaml
+  #         - template: ../../pipeline-modules/terraform/v1/validate.yml
+  #           parameters:
+  #             archetypesDir: ${{ variables.archetypesDir }}
+  #             serviceCodeDir: ${{ variables.serviceCodeDir }}
+  #             skipPreCommitFailures: ${{ parameters.skipPreCommitFailures }}
+  #         - template: ../../pipeline-modules/terraform/v1/task-pre-commit-scan.yaml
+  #           parameters:
+  #             buildSourceBranch: ${{ variables.buildSourceBranch }}
+  #             archetypesDir: ${{ variables.archetypesDir }}
+  #             serviceCodeDir: ${{ variables.serviceCodeDir }}
+  #         - ${{ if eq(parameters.skipTrufflehogScan, false) }}:
+  #           - template: ../../pipeline-modules/utils/v1/task-scan-trufflehog.yaml
+  #             parameters:
+  #               componentName: ${{ variables.componentName }}
+  #               archetypesDir: ${{ variables.archetypesDir }}
+  #               serviceCodeDir: ${{ variables.serviceCodeDir }}
+  #               includeFoldersForTrufflehogScan: ${{ parameters.includeFoldersForTrufflehogScan }}
+  #               excludeFoldersForTrufflehogScan: ${{ parameters.excludeFoldersForTrufflehogScan }}
+  #         - template: ../../pipeline-modules/terraform/v1/cleanup.yaml
+
+  - stage: Scan
+    # variables:
+    #   - template: ../_configs/variables/common/non-prd.yml
+    pool: ${{ variables.agentPool }}
+    jobs:
+      - job: Checkov
+        steps:
+    
+          - template: ../pipeline-modules/terraform/checkov-scan.yaml
+
+
+  # - stage: Test
+  #   variables:
+  #     - template: ../_configs/variables/common/non-prd.yml
+  #     - group: NonProd-SP
+  #     - group: COMMON
+  #   pool: ${{ variables.agentPool }}
+  #   jobs:
+  #     - job: TerraTest
+  #       displayName: TerraTest
+  #       steps:
+  #         - template: ../../pipeline-modules/terraform/v1/print-env-variables.yaml
+  #         - template: ../../pipeline-modules/terraform/v1/terratest.yml
+  #         - template: ../../pipeline-modules/terraform/v1/cleanup.yaml
